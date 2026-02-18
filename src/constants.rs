@@ -26,4 +26,10 @@ pub const MULTILINE_FORMATS: &[&str] = &[
     "pretty",
     "psql",
     "rst",
+    "simple_outline",
+    "rounded_outline",
+    "heavy_outline",
+    "mixed_outline",
+    "double_outline",
+    "fancy_outline",
 ];

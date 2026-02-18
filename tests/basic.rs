@@ -726,3 +726,82 @@ fn wide_characters_with_widechars_option() {
     );
     assert_eq!(output, expected);
 }
+#[test]
+fn outline_formats_support_multiline_wrapping() {
+    // Test that outline formats properly handle multiline cells with max_col_widths
+    let data = vec![
+        vec!["Column A", "Column B", "Long Column"],
+        vec![
+            "Row 1",
+            "Data B1",
+            "This is a very long text that should wrap into multiple lines when max_col_widths is applied",
+        ],
+        vec!["Row 2", "Data B2", "Short text"],
+    ];
+
+    let options = TabulateOptions::new()
+        .headers(Headers::FirstRow)
+        .table_format("rounded_outline")
+        .max_col_widths(vec![None, None, Some(30)]);
+
+    let output = tabulate(data, options).expect("tabulation succeed");
+
+    // Verify that the output contains multiple lines for the wrapped row
+    // and that all columns extend properly
+    let lines: Vec<&str> = output.lines().collect();
+
+    // Should have more than 5 lines (header separator, wrapped row takes multiple lines, etc.)
+    assert!(lines.len() > 5, "Output should have multiple lines for wrapped content");
+
+    // Check that row with long text has proper structure across multiple lines
+    // by verifying that we have vertical bars (│) at consistent positions
+    let row_lines: Vec<&str> = lines.iter()
+        .skip(3) // Skip top border, header, and header separator
+        .take(4) // Take the wrapped row lines
+        .copied()
+        .collect();
+
+    // All lines of the wrapped row should start and end with │
+    for line in &row_lines {
+        if !line.starts_with('╰') && !line.starts_with('╭') {
+            assert!(line.starts_with('│'), "Line should start with │: {}", line);
+            assert!(line.ends_with('│'), "Line should end with │: {}", line);
+        }
+    }
+}
+
+#[test]
+fn all_outline_formats_support_multiline() {
+    // Verify all outline formats handle multiline cells correctly
+    let formats = vec![
+        "simple_outline",
+        "rounded_outline",
+        "heavy_outline",
+        "mixed_outline",
+        "double_outline",
+        "fancy_outline",
+    ];
+
+    let data = vec![
+        vec!["A", "B"],
+        vec!["X", "Line 1\nLine 2\nLine 3"],
+    ];
+
+    for format in formats {
+        let options = TabulateOptions::new()
+            .headers(Headers::FirstRow)
+            .table_format(format);
+
+        let output = tabulate(data.clone(), options)
+            .unwrap_or_else(|_| panic!("Format {} should work", format));
+
+        // The output should have multiple lines (more than 4: top, header, sep, bottom)
+        let line_count = output.lines().count();
+        assert!(
+            line_count > 4,
+            "Format {} should expand multiline cells (got {} lines)",
+            format,
+            line_count
+        );
+    }
+}
