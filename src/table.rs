@@ -1776,6 +1776,13 @@ fn apply_thousands_to_number(text: &str) -> String {
 }
 
 fn normalize_numeric_candidate(input: &str) -> String {
+    // If the input contains ", " (comma followed by space), it's likely a list of values
+    // rather than a single number with thousands separators. Don't normalize it.
+    if input.contains(", ") {
+        return input.to_string();
+    }
+
+    // Otherwise, strip separators (commas, underscores, spaces) for number parsing
     input
         .chars()
         .filter(|ch| *ch != ',' && *ch != '_' && *ch != ' ')

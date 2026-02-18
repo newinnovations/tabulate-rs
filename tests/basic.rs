@@ -805,3 +805,50 @@ fn all_outline_formats_support_multiline() {
         );
     }
 }
+
+#[test]
+fn comma_separated_values_preserve_spacing() {
+    let data = vec![
+        vec!["Numbers", "Description"],
+        vec!["1, 2, 3, 4, 5, 6, 7, 8, 9, 10", "Test"],
+    ];
+
+    let options = TabulateOptions::new()
+        .headers(Headers::FirstRow)
+        .table_format("grid")
+        .max_col_widths(vec![Some(15), None]);
+
+    let output = tabulate(data, options).expect("tabulation succeed");
+    println!("Output:\n{}", output);
+
+    // The numbers should still contain commas and spaces
+    assert!(output.contains(","), "Output should contain commas");
+    assert!(!output.contains("12345678910"), "Numbers should not be concatenated");
+}
+
+#[test]
+fn thousands_separators_still_parse_as_numbers() {
+    // Verify that legitimate thousands separators still work for parsing
+    let data = vec![
+        vec!["Population", "GDP"],
+        vec!["1,000", "5,000,000"],
+        vec!["2000", "10000000"],
+    ];
+
+    let options = TabulateOptions::new()
+        .headers(Headers::FirstRow)
+        .table_format("plain");
+
+    let output = tabulate(data, options).expect("tabulation succeed");
+    println!("Output:\n{}", output);
+
+    // Verify the numbers are right-aligned (indicating they were parsed as numbers)
+    // "1,000" should parse as 1000 and "5,000,000" should parse as 5000000
+    let lines: Vec<&str> = output.lines().collect();
+    assert!(lines.len() >= 3, "Should have header and data rows");
+
+    // Check that numbers are right-aligned by looking for leading spaces
+    let row1 = lines[1];
+    assert!(row1.trim_start() != row1, "First data row should have leading spaces (right-aligned)");
+    assert!(row1.contains("1000") || row1.contains("1,000"), "Should contain parsed number");
+}
